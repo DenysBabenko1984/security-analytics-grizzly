@@ -1,4 +1,3 @@
-#!/bin/bash
 # Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +35,6 @@ import pathlib
 import shutil
 import subprocess
 import sys
-import tempfile
 from typing import List
 import yaml
 
@@ -54,7 +52,8 @@ class ForeColor:
   RESET = '\033[39m'
   NONE = '\033[39m'
 
-TEMP_DIR = pathlib.Path(tempfile.mkdtemp(prefix='csa.'))
+CURRENT_PATH = pathlib.Path(__file__).resolve().parent
+REPO_PATH = CURRENT_PATH.parent  # Go 1 level up
 
 
 def run_command(arguments: List[str]) -> str:
@@ -90,12 +89,6 @@ def main(args: argparse.Namespace) -> None:
   grizzly_path = pathlib.Path(args.grizzly_repo_path, args.domain_name)
   scope_file = pathlib.Path(grizzly_path, 'SCOPE.yml')
   dataset_name = args.domain_name.lower().split('/')[-1]
-  # Pull https://github.com/GoogleCloudPlatform/security-analytics to TEMP_DIR
-  shell_cmd = [
-      'gh', 'repo', 'clone', 'GoogleCloudPlatform/security-analytics',
-      TEMP_DIR
-    ]
-  cmd_result = run_command(shell_cmd)
   csa_scope = {
       'schedule_interval': args.schedule_interval,
       'execution_timeout_per_table': 1200,
@@ -107,7 +100,7 @@ def main(args: argparse.Namespace) -> None:
   grizzly_path.mkdir(exist_ok=True)
   (grizzly_path / 'queries').mkdir(exist_ok=True)
   # Copy CSA scripts to GRIZLY folder
-  for f in (TEMP_DIR / 'backends' / 'bigquery' / 'sql').glob('**/*.sql'):
+  for f in (REPO_PATH / 'backends' / 'bigquery' / 'sql').glob('**/*.sql'):
     csa_file_name = dataset_name + '.' + str(f.stem.lower()).split('_', 2)[-1]
     # csa_file_name = f'_{f.stem.lower()}'
     sql_file = pathlib.Path(grizzly_path,
